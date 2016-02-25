@@ -163,35 +163,35 @@ namespace Flashunity.Cells
 
             
         //        public void AddFaces(Vector3[] vertices, int[] triangles, Vector2[] uv)
-        public void AddFaces(Vector3[] vertices, int[] triangles, Vector2[] uv, ref int indexVertices, ref int indexTriangles, ref int indexUv)
+        public void AddFaces(Vector3[] vertices, Vector3[] normals, int[] triangles, Vector2[] uv, ref int indexVertices, ref int indexTriangles, ref int indexUv)
         {
             if (back == null || !(back as Block).hideNeighbourFace(this))
-                AddFace(GetBlockFace(FaceDirection.back), vertices, triangles, uv, ref indexVertices, ref indexTriangles, ref indexUv);
+                AddFace(GetBlockFace(FaceDirection.back), vertices, normals, triangles, uv, ref indexVertices, ref indexTriangles, ref indexUv);
 //                AddFace(GetBlockFace(FaceDirection.back), vertices, triangles, uv);
 
             if (front == null || !(front as Block).hideNeighbourFace(this))
-                AddFace(GetBlockFace(FaceDirection.front), vertices, triangles, uv, ref indexVertices, ref indexTriangles, ref indexUv);
+                AddFace(GetBlockFace(FaceDirection.front), vertices, normals, triangles, uv, ref indexVertices, ref indexTriangles, ref indexUv);
 //            AddFace(GetBlockFace(FaceDirection.front), vertices, triangles, uv);
 
             if (top == null || !(top as Block).hideNeighbourFace(this))
-                AddFace(GetBlockFace(FaceDirection.top), vertices, triangles, uv, ref indexVertices, ref indexTriangles, ref indexUv);
+                AddFace(GetBlockFace(FaceDirection.top), vertices, normals, triangles, uv, ref indexVertices, ref indexTriangles, ref indexUv);
 //            AddFace(GetBlockFace(FaceDirection.top), vertices, triangles, uv);
 
             if (bottom == null || !(bottom as Block).hideNeighbourFace(this))
-                AddFace(GetBlockFace(FaceDirection.bottom), vertices, triangles, uv, ref indexVertices, ref indexTriangles, ref indexUv);
+                AddFace(GetBlockFace(FaceDirection.bottom), vertices, normals, triangles, uv, ref indexVertices, ref indexTriangles, ref indexUv);
 //            AddFace(GetBlockFace(FaceDirection.bottom), vertices, triangles, uv);
 
             if (left == null || !(left as Block).hideNeighbourFace(this))
-                AddFace(GetBlockFace(FaceDirection.left), vertices, triangles, uv, ref indexVertices, ref indexTriangles, ref indexUv);
+                AddFace(GetBlockFace(FaceDirection.left), vertices, normals, triangles, uv, ref indexVertices, ref indexTriangles, ref indexUv);
 //            AddFace(GetBlockFace(FaceDirection.left), vertices, triangles, uv);
 
             if (right == null || !(right as Block).hideNeighbourFace(this))
-                AddFace(GetBlockFace(FaceDirection.right), vertices, triangles, uv, ref indexVertices, ref indexTriangles, ref indexUv);
+                AddFace(GetBlockFace(FaceDirection.right), vertices, normals, triangles, uv, ref indexVertices, ref indexTriangles, ref indexUv);
 //            AddFace(GetBlockFace(FaceDirection.right), vertices, triangles, uv);
         }
 
         //        void AddFace(BlockFace blockFace, Vector3[] vertices, int[] triangles, Vector2[] uv)
-        void AddFace(BlockFace blockFace, Vector3[] vertices, int[] triangles, Vector2[] uv, ref int indexVertices, ref int indexTriangles, ref int indexUv)
+        void AddFace(BlockFace blockFace, Vector3[] vertices, Vector3[] normals, int[] triangles, Vector2[] uv, ref int indexVertices, ref int indexTriangles, ref int indexUv)
         {
             //      Log.Add("AddFace");
             /*
@@ -200,6 +200,7 @@ namespace Flashunity.Cells
             int uvBegin = uv.Length;
 */
             var faceVertices = blockFace.vertices;
+            var faceNormals = blockFace.normals;
             var faceTriangles = blockFace.triangles;
             var faceUV = blockFace.uv;
 
@@ -211,16 +212,12 @@ namespace Flashunity.Cells
             {
                 //       Log.Add(faceVertices [i].ToString());
 
-                //float r = 0.01f;
 
-//                vertices [indexVertices++] = faceVertices [i] + v + new Vector3(Random.Range(-r, r), Random.Range(-r, r), Random.Range(-r, r));
-                vertices [indexVertices++] = faceVertices [i] + v;// + new Vector3(Random.Range(-r, r), Random.Range(-r, r), Random.Range(-r, r));
+                vertices [indexVertices] = faceVertices [i] + v;
 
+                normals [indexVertices] = faceNormals [i];
 
-
-//                var faceVert = faceVertices [i];
-
-                //              vertices [indexVertices++] = new Vector3(faceVert.x + v.x, faceVert.y + v.y, faceVert.z + v.z);
+                indexVertices++;
             }
 
             //          int indexTrianglesBegin = indexTriangles;

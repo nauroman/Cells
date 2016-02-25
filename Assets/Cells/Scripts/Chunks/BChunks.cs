@@ -16,19 +16,29 @@ namespace Flashunity.Cells
     {
         [SerializeField] Transform chunk;
 
+        [HideInInspector]
         public ChunksPos chunksPos;
 
+        [HideInInspector]
         public Cell cell;
 
+        [HideInInspector]
         public long time;
 
-        public bool updated;
+        //      [HideInInspector]
+        //        public bool updated;
 
+        [HideInInspector]
         public BChunks back;
+        [HideInInspector]
         public BChunks front;
+        [HideInInspector]
         public BChunks top;
+        [HideInInspector]
         public BChunks bottom;
+        [HideInInspector]
         public BChunks left;
+        [HideInInspector]
         public BChunks right;
 
         void Awake()
@@ -36,74 +46,6 @@ namespace Flashunity.Cells
 //            cell = new Cell(new Pos(0, 0, 0), null, this);
         }
 
-        /*
-        ChunksPos ChunksPos
-        {
-            get
-            {
-                return _chunksPos;
-            }
-            set
-            {
-                _chunksPos = value;
-//                transform.localPosition = _chunksPos.Vector3;
-                cell = new Cell()
-            }
-        }
-        */
-        //       public SortedList bChunksList = new SortedList();
-
-        /*
-        private PosChunk GetChunkPosition(Vector3 v)
-        {
-            var pos = transform.position;
-
-            var dv = v - transform.position;
-
-
-            return new PosChunk(1, 1, 1);
-        }
-    */
-
-        /*
-        void AddBlock(Vector3 position)
-        {
-            
-        }
-        */
-
-
-        /*
-
-        //        void AddBlock(PosBlock posBlock, int type, int textureIndex)
-        public void AddBlock(BChunk bChunk, Block block, bool update)
-        {
-            //     var posBlock = block.posBlock;
-
-            //       var bChunk = GetBChunk(posBlock);
-
-            //        if (bChunk)
-            //      {
-            bChunk.AddBlock(block, update);
-            //    }
-        }
-        */
-
-        /*
-        BChunk GetBChunk(PosBlock posBlock)
-        {
-            var posChunk = PosChunk.GetPosChunkFromPosBlock(posBlock);
-
-            var bChunk = bChunks [posChunk.index] as BChunk;
-
-            if (bChunk == null)
-            {
-                bChunk = AddChunk(posChunk);
-            }
-
-            return bChunk;
-        }
-        */
 
         public BChunk AddChunk(Pos pos)
         {
@@ -154,50 +96,6 @@ namespace Flashunity.Cells
 
         void Start()
         {
-            
-            
-            /*
-            var bChunk = AddChunk(new PosChunk(0, 0, 0), false);
-
-            var block = new Block(new PosBlock(0, 0, 31), 0, 1, bChunk, bChunks);
-
-            AddBlock(bChunk, block, false);
-
-            var bChunk1 = AddChunk(new PosChunk(0, 0, 1), false);
-
-            var block1 = new Block(new PosBlock(0, 0, 0), 0, 1, bChunk1, bChunks);
-
-            AddBlock(bChunk1, block1, false);
-            UpdateMesh();
-*/
-
-            //AddTestChunk(new PosChunk(0, 0, 0));
-
-            //       var cells = new SortedList<ushort, Cell>();
-
-            //     cell = new Cell(new Pos(0, 0, 0), cells, this);
-
-            //   AddTestChunk(new Pos(1, 1, 1));
-
-
-
-
-            /*
-            for (int x = 0; x < 3; x++)
-            {
-                for (int y = 1; y < 2; y++)
-                {
-                    for (int z = 1; z < 2; z++)
-                    {
-                        AddTestChunk(new PosChunk(x, y, z));
-                    }
-                }
-            }
-
-*/
-            //       UpdateMesh();
-
-            //         Log.Add(Log.Props(block));
         }
 
         public void UpdateMesh()
@@ -409,30 +307,23 @@ namespace Flashunity.Cells
 
             chunkData.index = cell.pos.index;
 
-            var blocks = new BlockData[cell.children.Count];
+            var blockIndex = new ushort[cell.children.Count];
+            var blockType = new ushort[cell.children.Count];
 
             for (int i = 0; i < cell.children.Count; i++)
             {
-                blocks [i] = GetBlockData(cell.children.Values [i]);
+                var block = cell.children.Values [i];
+
+                blockIndex [i] = block.pos.index;
+                blockType [i] = (block as Block).type;
             }
-                
-            chunkData.blocks = blocks;
+
+            chunkData.blockType = blockType;
+            chunkData.blockIndex = blockIndex;
 
 
             return chunkData;
         }
-
-        BlockData GetBlockData(Cell cell)
-        {
-            var blockData = new BlockData();
-
-            blockData.index = cell.pos.index;
-
-            blockData.type = (cell.owner as Block).textureIndex;
-
-            return blockData;
-        }
-
 
         public void Save()
         {
@@ -524,25 +415,13 @@ namespace Flashunity.Cells
     }
 }
 
+//16*16*10*16*16*10*4+16*16*10*(2+8)
+
 [Serializable]
 class BChunksData
 {
-    //    public string fileName;
-    // "p10.m5.m30";
-    // (10,-5,-30);
-    //    public ulong formatVersion = 0;
-
     //DateTime.Now.Ticks;
     public long time;
-
-    /*
-    public string back;
-    public string front;
-    public string top;
-    public string bottom;
-    public string left;
-    public string right;
-*/
 
     public BChunkData[] chunks;
 }
@@ -551,12 +430,7 @@ class BChunksData
 class BChunkData
 {
     public ushort index;
-    public BlockData[] blocks;
-}
 
-[Serializable]
-class BlockData
-{
-    public ushort index;
-    public ushort type;
+    public ushort[] blockIndex;
+    public ushort[] blockType;
 }

@@ -88,6 +88,12 @@ namespace Flashunity.Cells
                     return new B0(pos, parent, 0, 0, Transparent.Opaque);
                 case 1:
                     return new B1(pos, parent, 1, 1, Transparent.Transparent);
+                case 2:
+                    return new Block(pos, parent, 2, 2, Transparent.TransparentAndFusionToFusion);
+                case 3:
+                    return new Block(pos, parent, 3, 3, Transparent.Opaque);
+                case 4:
+                    return new Block(pos, parent, 4, 4, Transparent.Transparent);
             }
 
             return null;//new Block(pos, parent, type, false);
@@ -234,6 +240,8 @@ namespace Flashunity.Cells
             int facesCount = GetFacesCount();
 
             var vertices = new Vector3[facesCount * 4];
+            var normals = new Vector3[facesCount * 4];
+            var colors32 = new Color[facesCount * 4];
             var triangles = new int[facesCount * 6];
             var uv = new Vector2[facesCount * 4];
 
@@ -248,16 +256,27 @@ namespace Flashunity.Cells
 //                var block = cells.Values. GetByIndex(i) as Block;
                 var block = children.Values [i] as Block;
 //                block.AddFaces(vertices, triangles, uv);
-                block.AddFaces(vertices, triangles, uv, ref indexVertices, ref indexTriangles, ref indexUv);
+                block.AddFaces(vertices, normals, triangles, uv, ref indexVertices, ref indexTriangles, ref indexUv);
             }
 
 
+            for (int i = 0; i < facesCount * 4; i++)
+            {
+                colors32 [i] = Color.red;//, 255);
+            }
+
+
+
             mesh.vertices = vertices;
+            mesh.normals = normals;
             mesh.triangles = triangles;
             mesh.uv = uv;
+            //mesh.colors = colors32;
 
-            mesh.Optimize();
-            mesh.RecalculateNormals();
+            //     mesh.Optimize();
+            //           mesh.RecalculateNormals();
+
+
 
             meshCollider.sharedMesh = mesh;
 

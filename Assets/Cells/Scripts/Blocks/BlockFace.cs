@@ -7,6 +7,7 @@ namespace Flashunity.Cells
     public class BlockFace
     {
         readonly public Vector3[] vertices;
+        readonly public Vector3[] normals;
         readonly public int[] triangles;
         readonly public Vector2[] uv;
 
@@ -27,7 +28,17 @@ namespace Flashunity.Cells
                         new Vector3(0.0f, 0.0f, 1.0f)
                     };
 
+                    normals = new Vector3[]
+                    {
+                        Vector3.forward,
+                        Vector3.forward,
+                        Vector3.forward,
+                        Vector3.forward
+                    };
+
                     uv = CubesUVs.cubesUVs [textureIndex].side;
+
+
 
                     break;
 
@@ -41,6 +52,15 @@ namespace Flashunity.Cells
                         new Vector3(1.0f, 0.0f, 0.0f)
 
                     };
+
+                    normals = new Vector3[]
+                    {
+                        Vector3.back,
+                        Vector3.back,
+                        Vector3.back,
+                        Vector3.back
+                    };
+
                       
                     uv = CubesUVs.cubesUVs [textureIndex].side;
 
@@ -56,6 +76,14 @@ namespace Flashunity.Cells
                         new Vector3(1.0f, 1.0f, 0.0f)
 
                     };
+
+                    normals = new Vector3[]
+                    {
+                        Vector3.up,
+                        Vector3.up,
+                        Vector3.up,
+                        Vector3.up
+                    };
                         
                     uv = CubesUVs.cubesUVs [textureIndex].top;
 
@@ -70,6 +98,14 @@ namespace Flashunity.Cells
                         new Vector3(0.0f, 0.0f, 1.0f),
                         new Vector3(0.0f, 0.0f, 0.0f)
 
+                    };
+
+                    normals = new Vector3[]
+                    {
+                        Vector3.down,
+                        Vector3.down,
+                        Vector3.down,
+                        Vector3.down
                     };
 
                     uv = CubesUVs.cubesUVs [textureIndex].bottom;
@@ -88,6 +124,14 @@ namespace Flashunity.Cells
 
                     };
 
+                    normals = new Vector3[]
+                    {
+                        Vector3.left,
+                        Vector3.left,
+                        Vector3.left,
+                        Vector3.left
+                    };
+
                     uv = CubesUVs.cubesUVs [textureIndex].side;
 
                     break;
@@ -100,6 +144,14 @@ namespace Flashunity.Cells
                         new Vector3(1.0f, 1.0f, 0.0f),
                         new Vector3(1.0f, 1.0f, 1.0f),
                         new Vector3(1.0f, 0.0f, 1.0f)
+                    };
+
+                    normals = new Vector3[]
+                    {
+                        Vector3.right,
+                        Vector3.right,
+                        Vector3.right,
+                        Vector3.right
                     };
 
                     uv = CubesUVs.cubesUVs [textureIndex].side;

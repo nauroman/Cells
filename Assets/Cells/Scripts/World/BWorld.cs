@@ -2,6 +2,7 @@
 using System.Collections;
 using System;
 using Flashunity.Logs;
+using System.Runtime.InteropServices.Expando;
 
 namespace Flashunity.Cells
 {
@@ -19,23 +20,45 @@ namespace Flashunity.Cells
 
         void Start()
         {
-            var bChunks_100 = AddChunks(new ChunksPos(-1, 0, 0));
+            //         var bChunks_100 = AddChunks(new ChunksPos(-1, 0, 0));
             var bChunks000 = AddChunks(new ChunksPos(0, 0, 0));
-            var bChunks00_1 = AddChunks(new ChunksPos(0, 0, -1));
+            var bChunks_100 = AddChunks(new ChunksPos(-1, 0, 0));
+
+            //    var bChunk000 = AddChunk(bChunks000, new Pos(0, 0, 0));
+
+//            AddBlock(bChunk000, new Pos(0, 0, 0), 0);
+            //          AddBlock(bChunk000, new Pos(0, 0, 1), 0);
+            //        AddBlock(bChunk000, new Pos(0, 0, 2), 0);
+
+            //       bChunk000.UpdateMesh();
+            //     bChunk000.UpdateMeshesNeighbours();
+            //       var bChunks00_1 = AddChunks(new ChunksPos(0, 0, -1));
 
 
-            var bChunk15 = AddChunk(bChunks_100, new Pos(Pos.WIDTH - 1, 0, 0));
+            //        var bChunk15 = AddChunk(bChunks_100, new Pos(Pos.WIDTH - 1, 0, 0));
 
-            FillBlocks(bChunk15, 0);
+            //      FillBlocks(bChunk15, 0);
 
-//            FillChunks(bChunks000, 0, (byte)Pos.WIDTH, (byte)Pos.HEIGHT, (byte)Pos.WIDTH);
-            FillChunks(bChunks000, 0, (byte)Pos.WIDTH, 2, (byte)Pos.WIDTH);
+            //FillChunks(bChunks000, 0, (byte)Pos.WIDTH, (byte)Pos.HEIGHT, (byte)Pos.WIDTH);
+            //     StartCoroutine(FillChunks(bChunks000, 0, (byte)Pos.WIDTH, (byte)Pos.HEIGHT, (byte)Pos.WIDTH));
+            //StartCoroutine(FillChunks(bChunks000, 0, (byte)Pos.WIDTH, 1, (byte)Pos.WIDTH));
+            //          StartCoroutine(FillChunks(bChunks000, 0, 1, 1, 1));
+//            StartCoroutine(FillChunks(bChunks_100, 1, 1, 1, 1));
+
+            StartCoroutine(FillChunks(bChunks000, 0, 3, 3, 3));
+//            StartCoroutine(FillChunks(bChunks_100, 0, 3, 2, (byte)Pos.WIDTH));
+
+//            StartCoroutine(FillChunks(bChunks000, 0, (byte)Pos.WIDTH, 2, (byte)Pos.WIDTH));
+            //          StartCoroutine(FillChunks(bChunks_100, 0, (byte)Pos.WIDTH, 2, (byte)Pos.WIDTH));
+
+            //       Debug.Log("started");
+
             //      FillChunks(bChunks_100, 0, (byte)Pos.WIDTH, (byte)Pos.HEIGHT, (byte)Pos.WIDTH);
             //    FillChunks(bChunks00_1, 0, (byte)Pos.WIDTH, (byte)Pos.HEIGHT, (byte)Pos.WIDTH);
 
-            bChunks000.UpdateMesh();
-            bChunks_100.UpdateMesh();
-            bChunks00_1.UpdateMesh();
+//            bChunks000.UpdateMesh();
+            //        bChunks_100.UpdateMesh();
+            //      bChunks00_1.UpdateMesh();
 
 //            bChunk0.UpdateMesh();
 //            bChunk0.UpdateMeshesNeighbours();
@@ -104,7 +127,7 @@ namespace Flashunity.Cells
         }
 
 
-        void FillChunks(BChunks bChunks, ushort type, byte width = (byte)Pos.WIDTH, byte height = (byte)Pos.HEIGHT, byte depth = (byte)Pos.WIDTH)
+        IEnumerator FillChunks(BChunks bChunks, ushort type, byte width = (byte)Pos.WIDTH, byte height = (byte)Pos.HEIGHT, byte depth = (byte)Pos.WIDTH)
         {
             for (byte x = 0; x < width; x++)
                 for (byte y = 0; y < height; y++)
@@ -113,9 +136,17 @@ namespace Flashunity.Cells
                         var bChunk = AddChunk(bChunks, new Pos(x, y, z));
 
                         FillBlocks(bChunk, type);
+
+                        bChunk.UpdateMesh();
+                        bChunk.UpdateMeshesNeighbours();
+
+                        yield return null;// new WaitForSeconds(0.1f);
                         //bChunk.UpdateMesh();
                         //bChunk.UpdateMeshesNeighbours();
                     }
+
+            //     Debug.Log("save");
+            //   bChunks.Save();
         }
 
         void FillBlocks(BChunk bChunk, ushort type, byte width = (byte)Pos.WIDTH, byte height = (byte)Pos.HEIGHT, byte depth = (byte)Pos.WIDTH)
@@ -123,8 +154,9 @@ namespace Flashunity.Cells
             for (byte x = 0; x < width; x++)
                 for (byte y = 0; y < height; y++)
                     for (byte z = 0; z < depth; z++)
-                        AddBlock(bChunk, new Pos(x, y, z), type);
+                        AddBlock(bChunk, new Pos(x, y, z), (ushort)UnityEngine.Random.Range(0, 5));
         }
+
 
         void Update()
         {
@@ -136,6 +168,7 @@ namespace Flashunity.Cells
             var t = Instantiate(chunks);
             t.position = chunkPos.Vector3;
             t.parent = this.transform;
+            //      t.gameObject.isStatic = true;
 
             var bChunks = t.GetComponent<BChunks>();
 
@@ -233,4 +266,33 @@ namespace Flashunity.Cells
         
         }
     }
+
+
+}
+
+[Serializable]
+class BWorldData
+{
+    public string name;
+    public long time;
+
+    public long x;
+    public long y;
+    public long z;
+
+    //DateTime.Now.Ticks;
+    public Vector3 pos;
+
+    public FileData[] files;
+}
+
+[Serializable]
+class FileData
+{
+    public string name;
+    public long time;
+
+    public long x;
+    public long y;
+    public long z;
 }
