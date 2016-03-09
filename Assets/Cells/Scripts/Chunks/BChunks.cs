@@ -47,9 +47,9 @@ namespace Flashunity.Cells
         }
 
 
-        public BChunk AddChunk(Pos pos)
+        public BChunk AddChunk(CellPos pos)
         {
-            var v = new Vector3(pos.x * Pos.WIDTH, pos.y * Pos.HEIGHT, pos.z * Pos.WIDTH);
+            var v = new Vector3(pos.x * CellPos.WIDTH, pos.y * CellPos.HEIGHT, pos.z * CellPos.WIDTH);
 
             var chunk = Instantiate(this.chunk, v + transform.position, Quaternion.identity) as Transform;
 
@@ -57,15 +57,7 @@ namespace Flashunity.Cells
 
             var bChunk = chunk.GetComponent<BChunk>();
 
-            bChunk.cell = new Cell(pos, cell, bChunk);
-
-            //        cell.neighbors [pos.index] = bChunk.cell;
-
-
-//            bChunksList [posChunk.index] = bChunk;
-
-//            bChunk.BChunks = bChunksList;
-            //    bChunk.UpdatePosChunk();
+            bChunk.cell = new ChunkCell(pos, cell, bChunk);
 
             return bChunk;
         }
@@ -79,7 +71,8 @@ namespace Flashunity.Cells
 //            return cell.cells [posChunk.index].owner as BChunk;
         }
 
-        public Pos Pos
+
+        public CellPos CenterPos
         {
             get
             {
@@ -89,9 +82,10 @@ namespace Flashunity.Cells
                 float y = pos.y / (Pos.HEIGHT * Pos.HEIGHT);
                 float z = pos.z / (Pos.WIDTH * Pos.WIDTH);
 
-                return new Pos((byte)(x + Pos.WIDTH / 2), (byte)(y + Pos.HEIGHT / 2), (byte)(z + Pos.WIDTH / 2));
+                return new CellPos((byte)(x + Pos.WIDTH / 2), (byte)(y + Pos.HEIGHT / 2), (byte)(z + Pos.WIDTH / 2));
             }
         }
+
 
 
         void Start()
@@ -140,7 +134,7 @@ namespace Flashunity.Cells
 
         }
 
-        void AddTestChunk(Pos posChunk)
+        void AddTestChunk(CellPos posChunk)
         {
             var bChunk = AddChunk(posChunk);
 
@@ -304,18 +298,20 @@ namespace Flashunity.Cells
         BChunkData GetBChunkData(Cell cell)
         {
             var chunkData = new BChunkData();
+            var bChunk = cell.owner as BChunk;
+            var blocks = bChunk.blocks;
 
             chunkData.index = cell.pos.index;
 
-            var blockIndex = new ushort[cell.children.Count];
-            var blockType = new ushort[cell.children.Count];
+            var blockIndex = new ushort[blocks.Count];
+            var blockType = new ushort[blocks.Count];
 
-            for (int i = 0; i < cell.children.Count; i++)
+            for (int i = 0; i < blocks.Count; i++)
             {
-                var block = cell.children.Values [i];
+                var block = blocks.Values [i];
 
                 blockIndex [i] = block.pos.index;
-                blockType [i] = (block as Block).type;
+                blockType [i] = block.type;
             }
 
             chunkData.blockType = blockType;
@@ -432,5 +428,7 @@ class BChunkData
     public ushort index;
 
     public ushort[] blockIndex;
+
+    // rewrite it to byte[] and a dictionary with all used in this chunk block types. If we use only 3 types of blocks for one chunk we don't need ushort and byte is enough.
     public ushort[] blockType;
 }

@@ -6,142 +6,467 @@ using System;
 
 namespace Flashunity.Cells
 {
-    public class Block : Cell
+    public class Block
     {
-        public readonly ushort textureIndex;
+        public Pos pos;
 
         public ushort type;
+        public readonly ushort textureIndex;
 
+        public ChunkCell parent;
+
+        public readonly bool opacity;
+
+        protected BlockFaces blockFaces;
         protected int facesCount;
 
-        public readonly Transparent transparent;
-
         Transform transform;
+
+
+
         //       public object MyProperty { get; }
 
-        public Block(Pos pos, Cell parent, ushort type, ushort textureIndex, Transparent transparent) : base(pos, parent, null)
+        public Block(Pos pos, ChunkCell parent, ushort type, ushort textureIndex, bool opacity)
         {
+            this.pos = pos;
+            this.parent = parent;
+
             this.type = type;
             this.textureIndex = textureIndex;
-            this.transparent = transparent;
 
-            //Log.Add(Log.Props(this));
+            this.opacity = opacity;
 
-            //      Log.Add(Log.Props(this));
+            parent.childrenBinaryGrid.Set(pos.x, pos.y, pos.z);
 
-            //this.children = null;
+            if (opacity)
+                parent.childrenOpacityBinaryGreed.Set(pos.x, pos.y, pos.z);
+            
+            blockFaces = new BlockFaces();
         }
 
         /*
-        public bool transparent
+        public Block(Pos pos, ChunkCell parent, ushort type, ushort textureIndex, Light light)
         {
-            get
-            {
-                return false;
-            }
+            this.pos = pos;
+            this.parent = parent;
+
+            this.type = type;
+            this.textureIndex = textureIndex;
+
+            this.opacity = false;
+
+            this.light = light;
+
+            parent.childrenBinaryGrid.Set(pos.x, pos.y, pos.z);
+
+            parent.AddLight(light, pos);
+
+            blockFaces = new BlockFaces();
         }
         */
 
-        public BlockFace GetBlockFace(FaceDirection faceDirection)
+        public virtual void UpdateFaces()
         {
-            return new BlockFace(faceDirection, textureIndex);
+
+            var greed = parent.childrenOpacityBinaryGreed;
+
+            var x = pos.x;
+            var y = pos.y;
+            var z = pos.z;
+
+            bool[] visibleFaces;
+
+            if (pos.edge)
+            {
+                visibleFaces = new bool[6];
+                    
+                if (z == Pos.WIDTH - 1)
+                {
+                    if (parent.back != null)
+                        visibleFaces [0] = !((parent.back as ChunkCell).childrenOpacityBinaryGreed.IsSet(x, y, 0));
+                    else
+                        visibleFaces [0] = true;
+                } else
+                    visibleFaces [0] = !greed.IsSet(x, y, (byte)(z + 1));
+
+                if (z == 0)
+                {
+                    if (parent.front != null)
+                        visibleFaces [1] = !((parent.front as ChunkCell).childrenOpacityBinaryGreed.IsSet(x, y, (byte)(Pos.WIDTH - 1)));
+                    else
+                        visibleFaces [1] = true;
+                } else
+                    visibleFaces [1] = !greed.IsSet(x, y, (byte)(z - 1));
+
+                if (y == Pos.HEIGHT - 1)
+                {
+                    if (parent.top != null)
+                        visibleFaces [2] = !((parent.top as ChunkCell).childrenOpacityBinaryGreed.IsSet(x, 0, z));
+                    else
+                        visibleFaces [2] = true;
+                    
+                } else
+                    visibleFaces [2] = !greed.IsSet(x, (byte)(y + 1), z);
+
+                if (y == 0)
+                {
+                    if (parent.bottom != null)
+                        visibleFaces [3] = !((parent.bottom as ChunkCell).childrenOpacityBinaryGreed.IsSet(x, (byte)(Pos.HEIGHT - 1), z));
+                    else
+                        visibleFaces [3] = true;
+                    
+                } else
+                    visibleFaces [3] = !greed.IsSet(x, (byte)(y - 1), z);
+
+                if (x == 0)
+                {
+                    if (parent.left != null)
+                        visibleFaces [4] = !((parent.left as ChunkCell).childrenOpacityBinaryGreed.IsSet((byte)(Pos.WIDTH - 1), y, z));
+                    else
+                        visibleFaces [4] = true;
+                    
+                } else
+                    visibleFaces [4] = !greed.IsSet((byte)(x - 1), y, z);
+                
+                if (x == Pos.WIDTH - 1)
+                {
+                    if (parent.right != null)
+                        visibleFaces [5] = !((parent.right as ChunkCell).childrenOpacityBinaryGreed.IsSet(0, y, z));
+                    else
+                        visibleFaces [5] = true;
+                    
+                } else
+                    visibleFaces [5] = !greed.IsSet((byte)(x + 1), y, z);
+                
+            } else
+            {
+                visibleFaces = new bool[]
+                {
+                    !greed.IsSet(x, y, (byte)(z + 1)),
+                    !greed.IsSet(x, y, (byte)(z - 1)),
+                    !greed.IsSet(x, (byte)(y + 1), z),
+                    !greed.IsSet(x, (byte)(y - 1), z),
+                    !greed.IsSet((byte)(x - 1), y, z),
+                    !greed.IsSet((byte)(x + 1), y, z)
+                };
+            }
+                
+            blockFaces.CacheFaces(visibleFaces, textureIndex, GetFacesLights(visibleFaces), new FaceDirection[0]);
+
+            facesCount = blockFaces.count;
         }
 
-        public bool hideNeighbourFace(Block block)
+
+
+
+        FaceLight[][] GetFacesLights(bool[] faces)
         {
-            return transparent == Transparent.Opaque || (transparent == Transparent.TransparentAndFusionToFusion && block.transparent == Transparent.TransparentAndFusionToFusion) || (transparent == Transparent.TransparentAndFusionToSameType && type == block.type);
-        }
+            FaceLight[][] facesLights = new FaceLight[6][];
 
-        public new void AddToNeighbors()
-        {
-            if (back != null && back.front == null)
-            {
-                back.front = this;
-                if (hideNeighbourFace(back as Block))
-                    (back as Block).DecreaseFacesCount();
-            }
+            if (faces [0])
+                facesLights [0] = GetFaceLightsBack();
 
-            if (front != null && front.back == null)
-            {
-                front.back = this;
-                if (hideNeighbourFace(front as Block))
-                    (front as Block).DecreaseFacesCount();
-            }
-
-            if (top != null && top.bottom == null)
-            {
-                top.bottom = this;
-                if (hideNeighbourFace(top as Block))
-                    (top as Block).DecreaseFacesCount();
-            }
-
-            if (bottom != null && bottom.top == null)
-            {
-                bottom.top = this;
-                if (hideNeighbourFace(bottom as Block))
-                    (bottom  as Block).DecreaseFacesCount();
-            }
+            if (faces [1])
+                facesLights [1] = GetFaceLightsFront();
             
-            if (left != null && left.right == null)
-            {
-                left.right = this;
-                if (hideNeighbourFace(left as Block))
-                    (left as Block).DecreaseFacesCount();
-            }
+            if (faces [2])
+                facesLights [2] = GetFaceLightsTop();
 
-            if (right != null && right.left == null)
-            {
-                right.left = this;
-                if (hideNeighbourFace(right as Block))
-                    (right as Block).DecreaseFacesCount();
-            }
+            if (faces [3])
+                facesLights [3] = GetFaceLightsBottom();
+
+            if (faces [4])
+                facesLights [4] = GetFaceLightsLeft();
+
+            if (faces [5])
+                facesLights [5] = GetFaceLightsRight();
+            
+            return facesLights;
         }
 
-
-        public new void RemoveFromNeighbors()
+        byte GetMaxLightDistance()
         {
-            if (back != null && back.front != null)
-            {
-                back.front = null;
-                if (hideNeighbourFace(back as Block))
-                    (back as Block).IncreaseFacesCount();
-            }
-
-            if (front != null && front.back != null)
-            {
-                front.back = null;
-                if (hideNeighbourFace(front as Block))
-                    (front as Block).IncreaseFacesCount();
-            }
-
-            if (top != null && top.bottom != null)
-            {
-                top.bottom = null;
-                if (hideNeighbourFace(top as Block))
-                    (top as Block).IncreaseFacesCount();
-            }
-
-            if (bottom != null && bottom.top != null)
-            {
-                bottom.top = null;
-                if (hideNeighbourFace(bottom as Block))
-                    (bottom as Block).IncreaseFacesCount();
-            }
-
-            if (left != null && left.right != null)
-            {
-                left.right = null;
-                if (hideNeighbourFace(left as Block))
-                    (left as Block).IncreaseFacesCount();
-            }
-
-            if (right != null && right.left != null)
-            {
-                right.left = null;
-                if (hideNeighbourFace(right as Block))
-                    (right as Block).IncreaseFacesCount();
-            }
+            return 3;
         }
+
+        FaceLight[] GetFaceLightsBack()
+        {
+            List<FaceLight> faceLighs = new List<FaceLight>();
+
+            int maxDistance = GetMaxLightDistance();
+
+            byte posx = pos.x;
+            byte posy = pos.y;
+            byte posz = pos.z;
+
+            for (int x = posx - maxDistance; x <= posx + maxDistance; x++)
+                for (int y = posy - maxDistance; y <= posy + maxDistance; y++)
+                    for (int z = posz + 1; z <= posz + maxDistance; z++)
+                    {
+                        FaceLight[] fls = GetFaceLights(x, y, z);
+
+                        for (int i = 0; i < fls.Length; i++)
+                        {
+                            FaceLight faceLight = fls [i];
+                            faceLighs.Add(faceLight);
+                        }
+                    }   
+
+            return faceLighs.ToArray();
+        }
+
+        FaceLight[] GetFaceLightsFront()
+        {
+            List<FaceLight> faceLighs = new List<FaceLight>();
+
+            int maxDistance = GetMaxLightDistance();
+
+            byte posx = pos.x;
+            byte posy = pos.y;
+            byte posz = pos.z;
+
+            for (int x = posx - maxDistance; x <= posx + maxDistance; x++)
+                for (int y = posy - maxDistance; y <= posy + maxDistance; y++)
+                    for (int z = posz - maxDistance; z <= posz - 1; z++)
+                    {
+                        FaceLight[] fls = GetFaceLights(x, y, z);
+
+                        for (int i = 0; i < fls.Length; i++)
+                        {
+                            FaceLight faceLight = fls [i];
+                            faceLighs.Add(faceLight);
+                        }
+                    }   
+
+            return faceLighs.ToArray();
+        }
+
+        FaceLight[] GetFaceLightsTop()
+        {
+            List<FaceLight> faceLighs = new List<FaceLight>();
+
+            int maxDistance = GetMaxLightDistance();
+
+            byte posx = pos.x;
+            byte posy = pos.y;
+            byte posz = pos.z;
+
+            for (int x = posx - maxDistance; x <= posx + maxDistance; x++)
+                for (int y = posy + 1; y <= posy + maxDistance; y++)
+                    for (int z = posz - maxDistance; z <= posz + maxDistance; z++)
+                    {
+                        FaceLight[] fls = GetFaceLights(x, y, z);
+
+                        for (int i = 0; i < fls.Length; i++)
+                        {
+                            FaceLight faceLight = fls [i];
+                            faceLighs.Add(faceLight);
+                        }
+                    }   
+
+            return faceLighs.ToArray();
+        }
+
+        FaceLight[] GetFaceLightsBottom()
+        {
+            List<FaceLight> faceLighs = new List<FaceLight>();
+
+            int maxDistance = GetMaxLightDistance();
+
+            byte posx = pos.x;
+            byte posy = pos.y;
+            byte posz = pos.z;
+
+            for (int x = posx - maxDistance; x <= posx + maxDistance; x++)
+                for (int y = posy - maxDistance; y <= posy - 1; y++)
+                    for (int z = posz - maxDistance; z <= posz + maxDistance; z++)
+                    {
+                        FaceLight[] fls = GetFaceLights(x, y, z);
+
+                        for (int i = 0; i < fls.Length; i++)
+                        {
+                            FaceLight faceLight = fls [i];
+                            faceLighs.Add(faceLight);
+                        }
+                    }   
+
+            return faceLighs.ToArray();
+        }
+
+        FaceLight[] GetFaceLightsLeft()
+        {
+            List<FaceLight> faceLighs = new List<FaceLight>();
+
+            int maxDistance = GetMaxLightDistance();
+
+            byte posx = pos.x;
+            byte posy = pos.y;
+            byte posz = pos.z;
+
+            for (int x = posx - maxDistance; x <= posx - 1; x++)
+                for (int y = posy - maxDistance; y <= posy + maxDistance; y++)
+                    for (int z = posz - maxDistance; z <= posz + maxDistance; z++)
+                    {
+                        FaceLight[] fls = GetFaceLights(x, y, z);
+
+                        for (int i = 0; i < fls.Length; i++)
+                        {
+                            FaceLight faceLight = fls [i];
+                            faceLighs.Add(faceLight);
+                        }
+                    }   
+
+            return faceLighs.ToArray();
+        }
+
+        FaceLight[] GetFaceLightsRight()
+        {
+            List<FaceLight> faceLighs = new List<FaceLight>();
+
+            int maxDistance = GetMaxLightDistance();
+
+            byte posx = pos.x;
+            byte posy = pos.y;
+            byte posz = pos.z;
+
+            for (int x = posx + 1; x <= posx + maxDistance; x++)
+                for (int y = posy - maxDistance; y <= posy + maxDistance; y++)
+                    for (int z = posz - maxDistance; z <= posz + maxDistance; z++)
+                    {
+                        FaceLight[] fls = GetFaceLights(x, y, z);
+
+                        for (int i = 0; i < fls.Length; i++)
+                        {
+                            FaceLight faceLight = fls [i];
+                            faceLighs.Add(faceLight);
+                        }
+                    }   
+
+            return faceLighs.ToArray();
+        }
+
+        FaceLight[] GetFaceLights(int x, int y, int z)
+        {
+            var faceLights = new List<FaceLight>();
+
+            int parentX = x;
+            int parentY = y;
+            int parentZ = z;
+
+            var parent = GetParent(ref parentX, ref parentY, ref parentZ);
+
+            if (parent != null)
+            {
+//            if (x >= 0 && x < Pos.WIDTH && y >= 0 && y < Pos.HEIGHT && z >= 0 && z < Pos.WIDTH)
+                //          {
+                foreach (var pair in parent.childrenLightsTypes)
+                {
+                    var lightType = pair.Value;
+                    var grid = lightType.binaryGrid;
+
+                    if (grid.IsSet((byte)parentX, (byte)parentY, (byte)parentZ))
+                    {
+                        faceLights.Add(new FaceLight(new Vector3(x - pos.x + 0.5f, y - pos.y + 0.5f, z - pos.z + 0.5f), lightType.color32));
+                    }
+                }
+            }
+
+            return faceLights.ToArray();
+        }
+
+        ChunkCell GetParent(ref int x, ref int y, ref int z)
+        {
+            
+            int parentX = 0;
+            int parentY = 0;
+            int parentZ = 0;
+
+            if (z >= Pos.WIDTH)
+            {
+                z = z - Pos.WIDTH;
+                parentZ = 1;
+            } else if (z < 0)
+            {
+                z = Pos.WIDTH + z;
+                parentZ = -1;
+            }
+
+            if (y >= Pos.HEIGHT)
+            {
+                y = y - Pos.HEIGHT;
+                parentY = 1;
+            } else if (y < 0)
+            {
+                y = Pos.HEIGHT + y;
+                parentY = -1;
+            }
+
+            if (x >= Pos.WIDTH)
+            {
+                x = x - Pos.WIDTH;
+                parentX = 1;
+            } else if (x < 0)
+            {
+                x = Pos.WIDTH + x;
+                parentX = -1;
+            }
+
+            return parent.GetNeighbor(parentX, parentY, parentZ);
+
+
+            /*
+            if (x >= 0 && x < Pos.WIDTH && y >= 0 && y < Pos.HEIGHT && z >= 0 && z < Pos.WIDTH)
+            {                
+                return parent;
+            } 
+
+            if (parent != null)
+            {
+                if (x >= 0 && x < Pos.WIDTH && y >= 0 && y < Pos.HEIGHT && z >= Pos.WIDTH)
+                {
+                    z = z - Pos.WIDTH;
+                    return parent.back as ChunkCell;
+                } 
+
+                if (x >= 0 && x < Pos.WIDTH && y >= 0 && y < Pos.HEIGHT && z < 0)
+                {
+                    z = Pos.WIDTH + z;
+                    return parent.front as ChunkCell;
+                } 
+
+                if (x >= 0 && x < Pos.WIDTH && y >= Pos.HEIGHT && z >= 0 && z < Pos.WIDTH)
+                {
+                    y = y - Pos.HEIGHT;
+                    return parent.top as ChunkCell;
+                } 
+
+                if (x >= 0 && x < Pos.WIDTH && y < 0 && z >= 0 && z < Pos.WIDTH)
+                {
+                    y = Pos.HEIGHT + y;
+                    return parent.bottom as ChunkCell;
+                } 
+                    
+                if (x < 0 && y >= 0 && y < Pos.HEIGHT && z >= 0 && z < Pos.WIDTH)
+                {
+                    x = Pos.WIDTH + x;
+                    return parent.left as ChunkCell;
+                }
+
+                if (x >= Pos.WIDTH && y >= 0 && y < Pos.HEIGHT && z >= 0 && z < Pos.WIDTH)
+                {
+                    x = x - Pos.WIDTH;
+                    return parent.right as ChunkCell;
+                }
+            }
+
+            return null;
+
+            */
+
+        }
+
+
+
 
         public int FacesCount
         {
@@ -151,56 +476,24 @@ namespace Flashunity.Cells
             }
         }
 
-        public void IncreaseFacesCount()
+        public virtual void AddFaces(Vector3[] vertices, Vector3[] normals, Color32[] colors32, int[] triangles, Vector2[] uv, ref int indexVertices, ref int indexTriangles, ref int indexUv)
         {
-            facesCount++;
+            for (int i = 0; i < 6; i++)
+            {
+                var face = blockFaces.blockFaces [i];
+
+                if (face != null)
+                    AddFace(face, vertices, normals, colors32, triangles, uv, ref indexVertices, ref indexTriangles, ref indexUv);
+            }
+
         }
 
-        public void DecreaseFacesCount()
-        {
-            facesCount--;
-        }
-
-            
-        //        public void AddFaces(Vector3[] vertices, int[] triangles, Vector2[] uv)
-        public void AddFaces(Vector3[] vertices, Vector3[] normals, int[] triangles, Vector2[] uv, ref int indexVertices, ref int indexTriangles, ref int indexUv)
-        {
-            if (back == null || !(back as Block).hideNeighbourFace(this))
-                AddFace(GetBlockFace(FaceDirection.back), vertices, normals, triangles, uv, ref indexVertices, ref indexTriangles, ref indexUv);
-//                AddFace(GetBlockFace(FaceDirection.back), vertices, triangles, uv);
-
-            if (front == null || !(front as Block).hideNeighbourFace(this))
-                AddFace(GetBlockFace(FaceDirection.front), vertices, normals, triangles, uv, ref indexVertices, ref indexTriangles, ref indexUv);
-//            AddFace(GetBlockFace(FaceDirection.front), vertices, triangles, uv);
-
-            if (top == null || !(top as Block).hideNeighbourFace(this))
-                AddFace(GetBlockFace(FaceDirection.top), vertices, normals, triangles, uv, ref indexVertices, ref indexTriangles, ref indexUv);
-//            AddFace(GetBlockFace(FaceDirection.top), vertices, triangles, uv);
-
-            if (bottom == null || !(bottom as Block).hideNeighbourFace(this))
-                AddFace(GetBlockFace(FaceDirection.bottom), vertices, normals, triangles, uv, ref indexVertices, ref indexTriangles, ref indexUv);
-//            AddFace(GetBlockFace(FaceDirection.bottom), vertices, triangles, uv);
-
-            if (left == null || !(left as Block).hideNeighbourFace(this))
-                AddFace(GetBlockFace(FaceDirection.left), vertices, normals, triangles, uv, ref indexVertices, ref indexTriangles, ref indexUv);
-//            AddFace(GetBlockFace(FaceDirection.left), vertices, triangles, uv);
-
-            if (right == null || !(right as Block).hideNeighbourFace(this))
-                AddFace(GetBlockFace(FaceDirection.right), vertices, normals, triangles, uv, ref indexVertices, ref indexTriangles, ref indexUv);
-//            AddFace(GetBlockFace(FaceDirection.right), vertices, triangles, uv);
-        }
-
-        //        void AddFace(BlockFace blockFace, Vector3[] vertices, int[] triangles, Vector2[] uv)
-        void AddFace(BlockFace blockFace, Vector3[] vertices, Vector3[] normals, int[] triangles, Vector2[] uv, ref int indexVertices, ref int indexTriangles, ref int indexUv)
+        protected void AddFace(BlockFace blockFace, Vector3[] vertices, Vector3[] normals, Color32[] colors32, int[] triangles, Vector2[] uv, ref int indexVertices, ref int indexTriangles, ref int indexUv)
         {
             //      Log.Add("AddFace");
-            /*
-            int vBegin = vertices.Length;
-            int tBegin = triangles.Length;
-            int uvBegin = uv.Length;
-*/
             var faceVertices = blockFace.vertices;
             var faceNormals = blockFace.normals;
+            var faceColors32 = blockFace.colors32;
             var faceTriangles = blockFace.triangles;
             var faceUV = blockFace.uv;
 
@@ -210,66 +503,26 @@ namespace Flashunity.Cells
 
             for (int i = 0; i < faceVertices.Length; i++)
             {
-                //       Log.Add(faceVertices [i].ToString());
-
-
                 vertices [indexVertices] = faceVertices [i] + v;
-
                 normals [indexVertices] = faceNormals [i];
+                colors32 [indexVertices] = faceColors32 [i];
 
                 indexVertices++;
             }
-
-            //          int indexTrianglesBegin = indexTriangles;
-
+                
             for (int i = 0; i < faceTriangles.Length; i++)
             {
                 triangles [indexTriangles++] = indexVerticesBegin + faceTriangles [i];
-
-////                Log.Add("triangle: " + triangles [indexTriangles - 1].ToString());
             }
-
-            //          Log.Add(indexUv.ToString());
-//            Log.Add(Log.Props(mesh.uv));
-
-            //    Log.Add("faceUV: " + faceUV);
-
-//            if (faceUV != null)
-            //          {
-            //            Log.Add("faceUV.Length: " + faceUV.Length);
-            //          Log.Add(Log.Props(faceUV));
 
             for (int i = 0; i < faceUV.Length; i++)
             {
                 uv [indexUv++] = faceUV [i];
             }
         }
-
-        public void UpdateFacesCount()
-        {
-            facesCount = 0;
-
-            if (back == null || !(back as Block).hideNeighbourFace(this))
-                facesCount++;
-
-            if (front == null || !(front as Block).hideNeighbourFace(this))
-                facesCount++;
-
-            if (top == null || !(top as Block).hideNeighbourFace(this))
-                facesCount++;
-
-            if (bottom == null || !(bottom as Block).hideNeighbourFace(this))
-                facesCount++;
-
-            if (left == null || !(left as Block).hideNeighbourFace(this))
-                facesCount++;
-
-            if (right == null || !(right as Block).hideNeighbourFace(this))
-                facesCount++;
-        }
-
+            
     }
-
+    /*
     public enum Transparent : byte
     {
         Opaque,
@@ -277,4 +530,5 @@ namespace Flashunity.Cells
         TransparentAndFusionToFusion,
         TransparentAndFusionToSameType
     }
+    */
 }

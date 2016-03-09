@@ -104,6 +104,27 @@
           "y" : 0.859375,
           "w" : 0.125,
           "h" : 0.125   
+        }, 
+        {
+          "name" : "5_b",
+          "x" : 0.546875,
+          "y" : 0.859375,
+          "w" : 0.03125,
+          "h" : 0.03125   
+        }, 
+        {
+          "name" : "5_s",
+          "x" : 0.609375,
+          "y" : 0.859375,
+          "w" : 0.03125,
+          "h" : 0.03125   
+        }, 
+        {
+          "name" : "5_t",
+          "x" : 0.671875,
+          "y" : 0.859375,
+          "w" : 0.03125,
+          "h" : 0.03125   
         }],
     "meta": {
         "app": "http://www.codeandweb.com/texturepacker",
@@ -111,6 +132,6 @@
         "version": "1.0",
         "image": "blocks.png",
         "size": {"w":64,"h":64},
-        "smartupdate": "$TexturePacker:SmartUpdate:5e5c033abcd672c7939deada6e6f34ab:eaef0c1f70095837513081f1466cf721:b1f1a031cef7856acce3e479bba415bf$"
+        "smartupdate": "$TexturePacker:SmartUpdate:28f0dbf8c60a88c480fed96950df3850:cfd3c575c2377dd6479e0bcac19a3537:b1f1a031cef7856acce3e479bba415bf$"
     }
 }

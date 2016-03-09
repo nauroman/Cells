@@ -23,8 +23,6 @@ namespace Flashunity.Cells
             this.z = z;
         }
 
-
-
         public Vector3 Vector3
         {
             get

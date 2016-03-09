@@ -3,6 +3,8 @@ using System.Collections;
 using System.Collections.Generic;
 using System;
 
+//using UnityEditor;
+
 namespace Flashunity.Cells
 {
     public class Cell
@@ -13,7 +15,9 @@ namespace Flashunity.Cells
         public readonly SortedList<ushort, Cell> neighbors;
         public readonly SortedList<ushort, Cell> children;
 
-        public readonly Pos pos;
+        public BinaryGrid childrenBinaryGrid;
+
+        public readonly CellPos pos;
 
         public Cell back;
         public Cell front;
@@ -22,186 +26,176 @@ namespace Flashunity.Cells
         public Cell left;
         public Cell right;
 
+        //protected Greed childrenGreed;
+
 
         //public Cell(Pos pos, SortedList<ushort, Cell> neighbors, object owner)
         //        public Cell(Pos pos, SortedList<ushort, Cell> neighbors, Cell parent, object owner)
-        public Cell(Pos pos, Cell parent, object owner)
+        public Cell(CellPos pos, Cell parent, object owner)
         {
             this.pos = pos;
             this.parent = parent;
-            //this.neighbors = neighbors == null ? new SortedList<ushort, Cell>() : neighbors;
+
+            /*
+            if (parent == null)
+            {
+                neighbors = new SortedList<ushort, Cell>();
+                neighborsBinaryGrid = new BinaryGrid((byte)Pos.WIDTH, (byte)Pos.HEIGHT);
+            } else
+            {
+                neighbors = parent.children;
+                neighborsBinaryGrid = parent.neighborsBinaryGrid;
+            }
+            */
+
+            childrenBinaryGrid = new BinaryGrid((byte)Pos.WIDTH, (byte)Pos.HEIGHT);
+
+
             this.neighbors = parent == null ? new SortedList<ushort, Cell>() : parent.children;
+
             this.owner = owner == null ? this : owner;
             children = new SortedList<ushort, Cell>();
 
-            this.neighbors [pos.index] = this;
+            neighbors [pos.index] = this;
+//            neighborsBinaryGrid.Set(pos.x, pos.y, pos.z);
+            if (parent != null)
+                parent.childrenBinaryGrid.Set(pos.x, pos.y, pos.z);
 
             AddNeighbors();
             AddToNeighbors();
         }
 
-        void AddNeighbors()
+        protected Cell FindCellInNeighbours(byte x, byte y, byte z, ushort posIndex)
         {
-            SortedList<ushort, Cell> nBack = neighbors;
-            SortedList<ushort, Cell> nFront = neighbors;
-            SortedList<ushort, Cell> nTop = neighbors;
-            SortedList<ushort, Cell> nBottom = neighbors;
-            SortedList<ushort, Cell> nLeft = neighbors;
-            SortedList<ushort, Cell> nRight = neighbors;
+            Cell cell;
 
-            if (pos.edge && parent != null)
-            {                
-                if (pos.z == Pos.WIDTH - 1)
+            if (parent == null)
+            {
+                if (neighbors.TryGetValue(posIndex, out cell))
+                    return cell;
+            } else if (parent.childrenBinaryGrid.IsSet(x, y, z) && neighbors.TryGetValue(posIndex, out cell))
+                return cell;
+
+            return null;
+        }
+
+        public Cell FindCellInChildren(byte x, byte y, byte z, ushort posIndex)
+        {
+            Cell cell;
+
+            if (childrenBinaryGrid.IsSet(x, y, z) && children.TryGetValue(posIndex, out cell))
+                return cell;
+
+            return null;
+        }
+
+        protected virtual void AddNeighbors()
+        {
+            var x = pos.x;
+            var y = pos.y;
+            var z = pos.z;
+
+            if (pos.edge)
+            {
+                if (z == Pos.WIDTH - 1)
                 {
-                    if (parent.back != null)
-                        nBack = parent.back.children;
-                    else
-                        nBack = null;
-                }
-/*                
-
                     if (parent != null && parent.back != null)
-                        n = parent.back.neighbors;
-                        parent.back.neighbors.TryGetValue(pos.indexBack, out back);
+                        back = parent.back.FindCellInChildren(x, y, 0, pos.indexBack);
                     else
                         back = null;
-                } 
-                */
+                } else
+                    back = FindCellInNeighbours(x, y, (byte)(z + 1), pos.indexBack);
 
-                if (pos.z == 0)
+                if (z == 0)
                 {
-                    if (parent.front != null)
-                        nFront = parent.front.children;
-                    else
-                        nFront = null;
-                }
-                /*
                     if (parent != null && parent.front != null)
-                        parent.front.neighbors.TryGetValue(pos.indexFront, out front);
+                        front = parent.front.FindCellInChildren(x, y, Pos.WIDTH - 1, pos.indexFront);
                     else
                         front = null;
-                }
-                */
+                } else
+                    front = FindCellInNeighbours(x, y, (byte)(z - 1), pos.indexFront); 
 
-                if (pos.y == Pos.HEIGHT - 1)
+                if (y == Pos.HEIGHT - 1)
                 {
-                    if (parent.top != null)
-                        nTop = parent.top.children;
-                    else
-                        nTop = null;
-                }
-                /*
                     if (parent != null && parent.top != null)
-                        parent.top.neighbors.TryGetValue(pos.indexTop, out top);
-                    
-//                        top = parent.top.neighbors [pos.indexTop] as Cell;
+                        top = parent.top.FindCellInChildren(x, 0, z, pos.indexTop);
                     else
                         top = null;
-                } 
-                */
+                } else
+                    top = FindCellInNeighbours(x, (byte)(y + 1), z, pos.indexTop); 
 
-                if (pos.y == 0)
+                if (y == 0)
                 {
-                    if (parent.bottom != null)
-                        nBottom = parent.bottom.children;
-                    else
-                        nBottom = null;
-
-                }
-                /*    
                     if (parent != null && parent.bottom != null)
-                        parent.bottom.neighbors.TryGetValue(pos.indexBottom, out bottom);
-                    
-                    //    bottom = parent.bottom.neighbors [pos.indexBottom] as Cell;
+                        bottom = parent.bottom.FindCellInChildren(x, Pos.HEIGHT - 1, z, pos.indexBottom);
                     else
                         bottom = null;
-                } 
-                */
+                } else
+                    bottom = FindCellInNeighbours(x, (byte)(y - 1), z, pos.indexBottom); 
 
-                if (pos.x == 0)
+                if (x == 0)
                 {
-                    if (parent.left != null)
-                        nLeft = parent.left.children;
-                    else
-                        nLeft = null;
-                }
-                /*
                     if (parent != null && parent.left != null)
-                        parent.left.neighbors.TryGetValue(pos.indexLeft, out left);
-                    
-//                        left = parent.left.neighbors [pos.indexLeft] as Cell;
+                        left = parent.left.FindCellInChildren(Pos.WIDTH - 1, y, z, pos.indexLeft);
                     else
                         left = null;
-                } 
-*/
-                if (pos.x == Pos.WIDTH - 1)
+                } else
+                    left = FindCellInNeighbours((byte)(x - 1), y, z, pos.indexLeft); 
+
+                if (x == Pos.WIDTH - 1)
                 {
-                    if (parent.right != null)
-                        nRight = parent.right.children;
-                    else
-                        nRight = null;
-                }
-                /*
                     if (parent != null && parent.right != null)
-                        parent.right.neighbors.TryGetValue(pos.indexRight, out right);
-                    
-                    //    right = parent.right.neighbors [pos.indexRight] as Cell;
+                        right = parent.right.FindCellInChildren(0, y, z, pos.indexRight);
                     else
                         right = null;
-                }
-                */
+                } else
+                    right = FindCellInNeighbours((byte)(x + 1), y, z, pos.indexRight); 
 
+            } else
+            {
+                back = FindCellInNeighbours(x, y, (byte)(z + 1), pos.indexBack);
+                front = FindCellInNeighbours(x, y, (byte)(z - 1), pos.indexFront); 
+                top = FindCellInNeighbours(x, (byte)(y + 1), z, pos.indexTop); 
+                bottom = FindCellInNeighbours(x, (byte)(y - 1), z, pos.indexBottom); 
+                left = FindCellInNeighbours((byte)(x - 1), y, z, pos.indexLeft); 
+                right = FindCellInNeighbours((byte)(x + 1), y, z, pos.indexRight); 
             }
-
-            if (nBack == null || !nBack.TryGetValue(pos.indexBack, out back))
-                back = null;
-            if (nFront == null || !nFront.TryGetValue(pos.indexFront, out front))
-                front = null;
-            if (nTop == null || !nTop.TryGetValue(pos.indexTop, out top))
-                top = null;
-            if (nBottom == null || !nBottom.TryGetValue(pos.indexBottom, out bottom))
-                bottom = null;
-            if (nLeft == null || !nLeft.TryGetValue(pos.indexLeft, out left))
-                left = null;
-            if (nRight == null || !nRight.TryGetValue(pos.indexRight, out right))
-                right = null;
-
         }
 
 
         public void AddToNeighbors()
         {
-            if (back != null && back.front == null)
+
+            if (back != null)// && back.front == null)
             {
                 back.front = this;
             }
 
-            if (front != null && front.back == null)
+            if (front != null)// && front.back == null)
             {
                 front.back = this;
             }
 
-            if (top != null && top.bottom == null)
+            if (top != null)// && top.bottom == null)
             {
                 top.bottom = this;
             }
 
-            if (bottom != null && bottom.top == null)
+            if (bottom != null)// && bottom.top == null)
             {
                 bottom.top = this;
             }
 
-            if (left != null && left.right == null)
+            if (left != null)// && left.right == null)
             {
                 left.right = this;
             }
 
-            if (right != null && right.left == null)
+            if (right != null)// && right.left == null)
             {
                 right.left = this;
             }
         }
-
 
         public void RemoveFromNeighbors()
         {
@@ -236,6 +230,11 @@ namespace Flashunity.Cells
             {
                 right.left = null;
             }
+        }
+
+        public void RemoveFromGreed()
+        {
+            parent.childrenBinaryGrid.Reset(pos.x, pos.y, pos.z);
         }
 
 

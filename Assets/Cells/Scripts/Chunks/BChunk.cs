@@ -1,5 +1,6 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine.EventSystems;
 using System;
 
@@ -13,9 +14,15 @@ namespace Flashunity.Cells
 
     public class BChunk : MonoBehaviour, IPointerClickHandler
     {
-        public Cell cell;
+        public ChunkCell cell;
         Mesh mesh;
         MeshCollider meshCollider;
+
+        public SortedList<ushort, Block> blocks = new SortedList<ushort, Block>();
+
+
+        //      [SerializeField]
+        //        Transform pointLightWhite;
 
         /*
         public void UpdatePosChunk()
@@ -59,18 +66,23 @@ namespace Flashunity.Cells
 
 
             // FOR DEBUG!!! It's not necessary!!!
-            if (!cell.children.ContainsKey(pos.index))
+            if (!blocks.ContainsKey(pos.index))
             {
                 var block = GetBlockByType(type, pos, cell);
+
+                blocks.Add(pos.index, block);
+
+                //cell.neighborsBinaryGreed.Set(pos.x, pos.y, pos.z);
 
                 if (update)
                 {
 //                    block.UpdateNeighbors();
                     //block.AddToNeighbors();
-                    block.UpdateFacesCount();
+                    //      block.UpdateFacesCount();
 
                     UpdateMesh();
                 }
+
 
                 return block;
             }
@@ -80,20 +92,24 @@ namespace Flashunity.Cells
             //       Log.Add("AddBlock, blocks [block.posBlock.index]:" + blocks.Count.ToString());
         }
 
-        static Block GetBlockByType(ushort type, Pos pos, Cell parent)//, ushort textureIndex)
+        Block GetBlockByType(ushort type, Pos pos, ChunkCell parent)//, ushort textureIndex)
         {
             switch (type)
             {
                 case 0:
-                    return new B0(pos, parent, 0, 0, Transparent.Opaque);
+                    return new B0(pos, parent, 0, 0, true);
                 case 1:
-                    return new B1(pos, parent, 1, 1, Transparent.Transparent);
+                    return new B1(pos, parent, 1, 1, false);
                 case 2:
-                    return new Block(pos, parent, 2, 2, Transparent.TransparentAndFusionToFusion);
+                    return new Block(pos, parent, 2, 2, false);
                 case 3:
-                    return new Block(pos, parent, 3, 3, Transparent.Opaque);
+                    return new Block(pos, parent, 3, 3, true);
                 case 4:
-                    return new Block(pos, parent, 4, 4, Transparent.Transparent);
+                    return new Block(pos, parent, 4, 4, false);
+                case 5:
+                    return new BlockLight(pos, parent, 5, 5, new Light(0, new Color32(14, 14, 14, 255), 3));
+                case 6:
+                    return new BlockLight(pos, parent, 5, 5, new Light(1, new Color32(24, 0, 0, 255), 3));
             }
 
             return null;//new Block(pos, parent, type, false);
@@ -192,21 +208,11 @@ namespace Flashunity.Cells
         public void UpdateBlocks()
         {
             
-            for (int i = 0; i < cell.children.Count; i++)
+            for (int i = 0; i < blocks.Count; i++)
             {
-                var block = cell.children.Values [i] as Block;
-
-                //            block.AddToNeighbors();
-                block.UpdateFacesCount();
-
-
-//                Log.Add("pos: " + block.posBlock.GetVector3().ToString());
-//                Log.Add("back: " + (block.BlockNeighbors.back != null).ToString());
-//                Log.Add("front: " + (block.BlockNeighbors.front != null).ToString());
-
-                //            block.UpdateFacesCount();
+                var block = blocks.Values [i];
+                block.UpdateFaces();
             }
-
         }
 
         public void UpdateMeshesNeighbours()
@@ -235,13 +241,12 @@ namespace Flashunity.Cells
             mesh.Clear();
 
             UpdateBlocks();
-//            int blocksCount = blocks.Count;
 
             int facesCount = GetFacesCount();
 
             var vertices = new Vector3[facesCount * 4];
             var normals = new Vector3[facesCount * 4];
-            var colors32 = new Color[facesCount * 4];
+            var colors32 = new Color32[facesCount * 4];
             var triangles = new int[facesCount * 6];
             var uv = new Vector2[facesCount * 4];
 
@@ -249,67 +254,36 @@ namespace Flashunity.Cells
             int indexTriangles = 0;
             int indexUv = 0;
 
-            var children = cell.children;
+            //          var children = cell.children;
 
-            for (int i = 0; i < children.Count; i++)
+            for (int i = 0; i < blocks.Count; i++)
             {
-//                var block = cells.Values. GetByIndex(i) as Block;
-                var block = children.Values [i] as Block;
-//                block.AddFaces(vertices, triangles, uv);
-                block.AddFaces(vertices, normals, triangles, uv, ref indexVertices, ref indexTriangles, ref indexUv);
+                var block = blocks.Values [i] as Block;
+                block.AddFaces(vertices, normals, colors32, triangles, uv, ref indexVertices, ref indexTriangles, ref indexUv);
             }
-
-
-            for (int i = 0; i < facesCount * 4; i++)
-            {
-                colors32 [i] = Color.red;//, 255);
-            }
-
+                
 
 
             mesh.vertices = vertices;
             mesh.normals = normals;
             mesh.triangles = triangles;
             mesh.uv = uv;
-            //mesh.colors = colors32;
+            mesh.colors32 = colors32;
 
             //     mesh.Optimize();
-            //           mesh.RecalculateNormals();
 
 
+//            meshCollider.sharedMesh = mesh;
 
-            meshCollider.sharedMesh = mesh;
-
-
-            //        Log.Add(Log.Props(mesh));
-
-            /*
-            Log.Add(Log.Props(mesh.vertices));
-            Log.Add(Log.Props(mesh.triangles));
-            Log.Add(Log.Props(mesh.uv));
-*/
-            /*
-            for (int i = 0; i < mesh.vertices.Length; i++)
-            {
-                Log.Add(mesh.vertices [i].ToString());
-            }
-
-            for (int i = 0; i < mesh.triangles.Length; i++)
-            {
-                Log.Add(mesh.triangles [i].ToString());
-            }
-            */
         }
 
         int GetFacesCount()
         {
             int facesCount = 0;
 
-            var children = cell.children;
-
-            for (int i = 0; i < children.Count; i++)
+            for (int i = 0; i < blocks.Count; i++)
             {
-                var block = children.Values [i] as Block;
+                var block = blocks.Values [i];// as Block;
                 facesCount += block.FacesCount;
             }
 

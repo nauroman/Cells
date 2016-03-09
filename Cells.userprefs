@@ -1,10 +1,14 @@
 ﻿<Properties StartupItem="Assembly-CSharp.csproj" RefactoringSettings.EnableRefactorings="True">
   <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="Unity.Instance.Unity Editor" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Cells/Scripts/World/BWorld.cs">
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Cells/Scripts/Cells/Cell.cs">
     <Files>
-      <File FileName="Assets/Cells/Scripts/World/BWorld.cs" Line="136" Column="74" />
-      <File FileName="Assets/Cells/Scripts/Chunks/BChunk.cs" Line="92" Column="97" />
-      <File FileName="Assets/Cells/Scripts/Blocks/Block.cs" Line="1" Column="1" />
+      <File FileName="Assets/Cells/Scripts/Chunks/BChunk.cs" Line="108" Column="64" />
+      <File FileName="Assets/Cells/Scripts/Blocks/Block.cs" Line="334" Column="61" />
+      <File FileName="Assets/Cells/Scripts/Blocks/BlockFace.cs" Line="209" Column="28" />
+      <File FileName="Assets/Cells/Scripts/Blocks/BlockLight.cs" Line="172" Column="1" />
+      <File FileName="Assets/Cells/Scripts/Cells/ChunkCell.cs" Line="123" Column="10" />
+      <File FileName="Assets/Cells/Scripts/World/BWorld.cs" Line="133" Column="26" />
+      <File FileName="Assets/Cells/Scripts/Cells/Cell.cs" Line="17" Column="9" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
